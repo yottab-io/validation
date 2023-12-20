@@ -1,0 +1,95 @@
+package validation
+
+import (
+	"regexp"
+	userModel "yottab/api/user/model"
+	"yottab/utils/config"
+)
+
+var (
+	wordRe     = regexp.MustCompile(`^\w{0,32}$`) // used for log category
+	userRe     = regexp.MustCompile(`^[a-z]([a-z0-9]){3,19}$`)
+	emailRe    = regexp.MustCompile(`^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$`)
+	codeNumber = regexp.MustCompile(`^\d{0,128}$`)
+	phonNumber = regexp.MustCompile(`^[\-+\d]{0,16}$`)
+	notPass    = regexp.MustCompile(`^(.{0,9}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$`) //  ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*~_+=|:;?,<>]).{10,64}$
+	uuidRe     = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	domainRe   = regexp.MustCompile(`^[a-z0-9.\\-]{4,61}$`)
+)
+
+func ValidationWord(w string) bool           { return wordRe.MatchString(w) }
+func ValidationWorkspaceName(ws string) bool { return userRe.MatchString(ws) }
+func ValidationAppName(app string) bool      { return userRe.MatchString(app) }
+func ValidationCompanyName(co string) bool   { return userRe.MatchString(co) }
+func ValidationEmail(email string) bool      { return emailRe.MatchString(email) }
+func ValidationCodeNumber(code string) bool  { return codeNumber.MatchString(code) }
+func ValidationPhonNumber(num string) bool   { return phonNumber.MatchString(num) }
+func ValidationPass(pass string) bool        { return !notPass.MatchString(pass) }
+func ValidationUUID(uuid string) bool        { return uuidRe.MatchString(uuid) }
+func ValidationDomain(domain string) bool    { return domainRe.MatchString(domain) }
+
+func CheckWorkspaceName(ws string) error {
+	if !ValidationWorkspaceName(ws) {
+		return config.ErrBadWorkspace
+	}
+
+	return nil
+}
+
+func CheckSignupRequest(r *userModel.RequestSignup) error {
+	if !ValidationCompanyName(r.User) {
+		return config.ErrBadUser
+	} else if !ValidationEmail(r.UserMeta.Email) {
+		return config.ErrBadEmail
+	} else if !ValidationPass(r.Pass) {
+		return config.ErrBadPassword
+	}
+
+	return nil
+}
+
+func CheckUserInfo(userInfo *userModel.UserMetaData) error {
+	if !ValidationEmail(userInfo.Email) {
+		return config.ErrBadEmail
+	} else if !ValidationPhonNumber(userInfo.Tel) {
+		return config.ErrBadPhoneNumber
+	} else if len(userInfo.Address) > 128 {
+		return config.ErrBadAddress
+	} else if len(userInfo.Name) > 32 {
+		return config.ErrBadMetaName
+	} // else if !ValidationCodeNumber(userInfo.EconomicalNum) {	return config.ErrBadCodeNumber}
+
+	return nil
+}
+
+func CheckTokenRequest(info *userModel.TokenRequest) error {
+	if !ValidationCompanyName(info.User) {
+		return config.ErrBadUser
+	} else if !ValidationPass(info.Password) {
+		return config.ErrBadPassword
+	}
+
+	return nil
+}
+
+func CheckResetPassRequest(info *userModel.ResetPassword) error {
+	if !ValidationPass(info.NewPass) {
+		return config.ErrBadPassword
+	} else if !ValidationPass(info.OldPass) {
+		return config.ErrBadPassword
+	}
+
+	return nil
+}
+
+func CheckNewPassRequest(info *userModel.ForgetPasswordRequest) error {
+	if !ValidationPass(info.NewPass) {
+		return config.ErrBadPassword
+	} else if !ValidationCompanyName(info.Company) {
+		return config.ErrBadUser
+	} else if !ValidationUUID(info.Code) {
+		return config.ErrBadUUID
+	}
+
+	return nil
+}
