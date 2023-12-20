@@ -1,9 +1,8 @@
 package validation
 
 import (
+	"errors"
 	"regexp"
-	userModel "yottab/api/user/model"
-	"yottab/utils/config"
 )
 
 var (
@@ -15,6 +14,14 @@ var (
 	notPass    = regexp.MustCompile(`^(.{0,9}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$`) //  ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*~_+=|:;?,<>]).{10,64}$
 	uuidRe     = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 	domainRe   = regexp.MustCompile(`^[a-z0-9.\\-]{4,61}$`)
+)
+
+var (
+	ErrBadWorkspace = errors.New("Err Bad Workspace")
+	ErrBadUser      = errors.New("Err Bad User")
+	ErrBadEmail     = errors.New("Err Bad Email")
+	ErrBadPassword  = errors.New("Err Bad Password")
+	ErrBadUUID      = errors.New("Err Bad UUID")
 )
 
 func ValidationWord(w string) bool           { return wordRe.MatchString(w) }
@@ -30,65 +37,51 @@ func ValidationDomain(domain string) bool    { return domainRe.MatchString(domai
 
 func CheckWorkspaceName(ws string) error {
 	if !ValidationWorkspaceName(ws) {
-		return config.ErrBadWorkspace
+		return ErrBadWorkspace
 	}
 
 	return nil
 }
 
-func CheckSignupRequest(r *userModel.RequestSignup) error {
-	if !ValidationCompanyName(r.User) {
-		return config.ErrBadUser
-	} else if !ValidationEmail(r.UserMeta.Email) {
-		return config.ErrBadEmail
-	} else if !ValidationPass(r.Pass) {
-		return config.ErrBadPassword
+func CheckSignupRequest(user, email, pass string) error {
+	if !ValidationCompanyName(user) {
+		return ErrBadUser
+	} else if !ValidationEmail(email) {
+		return ErrBadEmail
+	} else if !ValidationPass(pass) {
+		return ErrBadPassword
 	}
 
 	return nil
 }
 
-func CheckUserInfo(userInfo *userModel.UserMetaData) error {
-	if !ValidationEmail(userInfo.Email) {
-		return config.ErrBadEmail
-	} else if !ValidationPhonNumber(userInfo.Tel) {
-		return config.ErrBadPhoneNumber
-	} else if len(userInfo.Address) > 128 {
-		return config.ErrBadAddress
-	} else if len(userInfo.Name) > 32 {
-		return config.ErrBadMetaName
-	} // else if !ValidationCodeNumber(userInfo.EconomicalNum) {	return config.ErrBadCodeNumber}
-
-	return nil
-}
-
-func CheckTokenRequest(info *userModel.TokenRequest) error {
-	if !ValidationCompanyName(info.User) {
-		return config.ErrBadUser
-	} else if !ValidationPass(info.Password) {
-		return config.ErrBadPassword
+func CheckTokenRequest(user, pass string) error {
+	if !ValidationCompanyName(user) {
+		return ErrBadUser
+	} else if !ValidationPass(pass) {
+		return ErrBadPassword
 	}
 
 	return nil
 }
 
-func CheckResetPassRequest(info *userModel.ResetPassword) error {
-	if !ValidationPass(info.NewPass) {
-		return config.ErrBadPassword
-	} else if !ValidationPass(info.OldPass) {
-		return config.ErrBadPassword
+func CheckResetPassRequest(newPass, oldPass string) error {
+	if !ValidationPass(newPass) {
+		return ErrBadPassword
+	} else if !ValidationPass(oldPass) {
+		return ErrBadPassword
 	}
 
 	return nil
 }
 
-func CheckNewPassRequest(info *userModel.ForgetPasswordRequest) error {
-	if !ValidationPass(info.NewPass) {
-		return config.ErrBadPassword
-	} else if !ValidationCompanyName(info.Company) {
-		return config.ErrBadUser
-	} else if !ValidationUUID(info.Code) {
-		return config.ErrBadUUID
+func CheckNewPassRequest(user, newPass, uuidCode string) error {
+	if !ValidationPass(newPass) {
+		return ErrBadPassword
+	} else if !ValidationCompanyName(user) {
+		return ErrBadUser
+	} else if !ValidationUUID(uuidCode) {
+		return ErrBadUUID
 	}
 
 	return nil
